@@ -1,6 +1,5 @@
 ﻿using System;
 using EnvDTE;
-using Microsoft.VisualStudio.Shell.Interop;
 
 namespace BennorMcCarthy.AutoT4
 {
@@ -12,21 +11,19 @@ namespace BennorMcCarthy.AutoT4
 
         public AutoT4ExtenderProvider(DTE dte)
         {
-            if (dte == null)
-                throw new ArgumentNullException("dte");
-
-            _dte = dte;
+            _dte = dte ?? throw new ArgumentNullException("dte");
         }
 
         public object GetExtender(string extenderCatId, string extenderName, object extendeeObject, IExtenderSite extenderSite, int cookie)
         {
+            Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
             if (!CanExtend(extenderCatId, extenderName, extendeeObject))
                 return null;
 
-            var fileProperties = extendeeObject as VSLangProj.FileProperties;
-            if (fileProperties == null)
+            if (!(extendeeObject is VSLangProj.FileProperties fileProperties))
+            {
                 return null;
-
+            }
             var item = _dte.Solution.FindProjectItem(fileProperties.FullPath);
             if (item == null)
                 return null;

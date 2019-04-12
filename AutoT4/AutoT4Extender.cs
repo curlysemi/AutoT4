@@ -15,19 +15,18 @@ namespace BennorMcCarthy.AutoT4
         public AutoT4Extender(ProjectItem item, IExtenderSite extenderSite, int cookie)
             : base(item)
         {
-            if (extenderSite == null)
-                throw new ArgumentNullException("extenderSite");
-
-            _extenderSite = extenderSite;
+            _extenderSite = extenderSite ?? throw new ArgumentNullException("extenderSite");
             _cookie = cookie;
         }
 
         ~AutoT4Extender()
         {
+            Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
             try
             {
-                if (_extenderSite != null)
-                    _extenderSite.NotifyDelete(_cookie);
+#pragma warning disable VSTHRD010
+                _extenderSite?.NotifyDelete(_cookie);
+#pragma warning restore VSTHRD010
             }
             catch
             {

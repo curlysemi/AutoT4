@@ -1,19 +1,24 @@
 ﻿using System.Runtime.InteropServices;
 using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;
 using EnvDTE;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading;
+using System;
+using Microsoft;
+using Task = System.Threading.Tasks.Task;
+
 
 namespace BennorMcCarthy.AutoT4
 {
-    [PackageRegistration(UseManagedResourcesOnly = true)]
+    [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)]
     [Guid(GuidList.guidAutoT4PkgString)]
-    [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExists_string)]
+    [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExistsAndFullyLoaded_string, PackageAutoLoadFlags.BackgroundLoad)]
     [ProvideOptionPage(typeof(Options), Options.CategoryName, Options.PageName, 1000, 1001, false)]
-    public sealed class AutoT4Package : Package
+
+    public sealed class AutoT4Package : AsyncPackage
     {
         private DTE _dte;
         private BuildEvents _buildEvents;
@@ -26,34 +31,35 @@ namespace BennorMcCarthy.AutoT4
             get { return (Options)GetDialogPage(typeof(Options)); }
         }
 
-        protected override void Initialize()
+        protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
-            base.Initialize();
+            await base.InitializeAsync(cancellationToken, progress);
+            await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
-            _dte = GetService(typeof(SDTE)) as DTE;
-            if (_dte == null)
-                return;
+            _dte = await GetServiceAsync(typeof(DTE)) as DTE;
+            Assumes.Present(_dte);
 
-            RegisterExtenderProvider(VSConstants.CATID.CSharpFileProperties_string);
-            RegisterExtenderProvider(VSConstants.CATID.VBFileProperties_string);
+            await RegisterExtenderProviderAsync(VSConstants.CATID.CSharpFileProperties_string);
+            await RegisterExtenderProviderAsync(VSConstants.CATID.VBFileProperties_string);
 
-            RegisterEvents();
+            await RegisterEventsAsync();
         }
 
-        private void RegisterEvents()
+        private async Task RegisterEventsAsync()
         {
+            await JoinableTaskFactory.SwitchToMainThreadAsync(DisposalToken);
             _buildEvents = _dte.Events.BuildEvents;
             _buildEvents.OnBuildBegin += OnBuildBegin;
             _buildEvents.OnBuildDone += OnBuildDone;
         }
 
-        private void RegisterExtenderProvider(string catId)
+        private async Task RegisterExtenderProviderAsync(string catId)
         {
+            await JoinableTaskFactory.SwitchToMainThreadAsync(DisposalToken);
             const string name = AutoT4ExtenderProvider.Name;
 
-            _objectExtenders = _objectExtenders ?? GetService(typeof(ObjectExtenders)) as ObjectExtenders;
-            if (_objectExtenders == null)
-                return;
+            _objectExtenders = _objectExtenders ?? await GetServiceAsync(typeof(ObjectExtenders)) as ObjectExtenders;
+            Assumes.Present(_objectExtenders);
 
             _extenderProvider = _extenderProvider ?? new AutoT4ExtenderProvider(_dte);
             _extenderProviderCookies.Add(_objectExtenders.RegisterExtenderProvider(catId, name, _extenderProvider));

@@ -19,6 +19,7 @@ namespace BennorMcCarthy.AutoT4
 
         public ProjectItemSettings(ProjectItem item, string scope = null)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             if (item == null)
                 throw new ArgumentNullException("item");
 
@@ -45,6 +46,7 @@ namespace BennorMcCarthy.AutoT4
 
         protected void Set<T>(T value = default(T), [CallerMemberName] string name = null)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             if (name == null)
                 throw new ArgumentNullException("name");
 
@@ -57,6 +59,7 @@ namespace BennorMcCarthy.AutoT4
 
         protected T Get<T>(T defaultValue = default(T), Func<string, T> coercionFunc = null, [CallerMemberName] string name = null)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             if (name == null)
                 throw new ArgumentNullException("name");
 

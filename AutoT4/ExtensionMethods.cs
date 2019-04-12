@@ -10,6 +10,7 @@ namespace BennorMcCarthy.AutoT4
     {
         public static IEnumerable<Project> GetProjectsWithinBuildScope(this DTE dte, vsBuildScope scope)
         {
+            Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
             IEnumerable<Project> projects = null;
 
             switch (scope)
@@ -42,6 +43,7 @@ namespace BennorMcCarthy.AutoT4
 
         public static void RunTemplate(this ProjectItem template)
         {
+            Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
             var templateVsProjectItem = template.Object as VSProjectItem;
             if (templateVsProjectItem != null)
             {
@@ -65,13 +67,11 @@ namespace BennorMcCarthy.AutoT4
 
     public static class ProjectExtensions
     {
-        public static IEnumerable<ProjectItem> FindT4ProjectItems(this IEnumerable<Project> projects)
-        {
-            return FindProjectItems(@"\.[Tt][Tt]$", projects);
-        }
+        public static IEnumerable<ProjectItem> FindT4ProjectItems(this IEnumerable<Project> projects) => FindProjectItems(@"\.[Tt][Tt]$", projects);
 
         private static IEnumerable<ProjectItem> FindProjectItems(string pattern, IEnumerable<Project> projects)
         {
+            Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
             var regex = new Regex(pattern);
             foreach (Project project in projects)
             {
@@ -82,6 +82,7 @@ namespace BennorMcCarthy.AutoT4
 
         private static IEnumerable<ProjectItem> FindProjectItems(Regex regex, ProjectItems projectItems)
         {
+            Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
             foreach (ProjectItem projectItem in projectItems)
             {
                 if (regex.IsMatch(projectItem.Name ?? ""))
